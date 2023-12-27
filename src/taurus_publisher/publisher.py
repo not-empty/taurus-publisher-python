@@ -1,4 +1,4 @@
-from src.helpers.redis.connection import RedisConnection
+from .helpers.redis.connection import RedisConnection
 from redis.asyncio import Redis
 from typing import Optional
 import json

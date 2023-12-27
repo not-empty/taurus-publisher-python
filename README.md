@@ -7,7 +7,7 @@ Python library using LUA script to send for redis a job for Taurus queue
 
 ### Installation
 
-[Release 1.0.0](https://github.com/not-empty/taurus-publisher-python/releases/tag/1.0.0) Requires [Python](https://www.python.org/) 3.6.9
+[Release 1.0.2](https://github.com/not-empty/taurus-publisher-python/releases/tag/1.0.0) Requires [Python](https://www.python.org/) 3.6.9
 
 The recommended way to install is through [Pip](https://pypi.org/project/pip/).
 
@@ -20,27 +20,27 @@ pip3 install taurus-publisher
 Publishing
 
 ```python
-#sample in python
-```
+from taurus_publisher.publisher import Publisher
+import asyncio
 
-Publishing with redis config
+async def test_publish():
+    publisher = Publisher()
 
-```python
-#sample in python
-```
+    data = '{"python":1}'
 
-Publishing with queue config
+    job_id = await publisher.add_job(
+        queue="python",
+        data=data,
+        opts={},
+        name="process"
+    )
 
-```python
-#sample in python
-```
+    print(f"Job added with ID: {job_id}")
 
-Publishing in loop without exceed redis connections (reuse redis connections)
-
-you may pass a redis connection to persist connection and allow you to loop add method without overload redis with connections
-
-```python
-#sample in python
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(test_publish())
+    loop.close()
 ```
 
 ### Development
