@@ -1,0 +1,22 @@
+[project]
+name = "taurus_publisher"
+version = "1.0.0"
+authors = [
+  { name="Not Empty Foundation", email="dev@not-empty.org" },
+]
+description = "Python library using LUA script to send for redis a job for Taurus queue"
+readme = "README.md"
+requires-python = ">=3.6.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/not-empty/taurus-publisher-python"
+Issues = "https://github.com/not-empty/taurus-publisher-python/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
