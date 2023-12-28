@@ -29,6 +29,7 @@ class Publisher:
         data: str,
         opts: dict = {},
         name: str = "process",
+        scheduled_time: int = 0
     ) -> str:
         id = str(ulid.new())
         redis = await self.get_connection()
@@ -39,7 +40,7 @@ class Publisher:
 
         return await redis.eval(
             self.get_add_script(),
-            6,
+            6,  # Number of keys
             key_prefix + "wait",
             key_prefix + "paused",
             key_prefix + "meta-paused",
@@ -57,6 +58,7 @@ class Publisher:
             priority,
             lifo,
             id,
+            scheduled_time,
         )
 
     def get_configs(self, opts: dict) -> dict:
@@ -69,7 +71,7 @@ class Publisher:
                 "delay": 0,
                 "removeOnComplete": 100,
                 "jobId": id,
-                "timestamp": int(time.time() * 1000),
+                "timestamp": round(time.time() * 1000),
             },
             **opts,
         }
@@ -94,29 +96,15 @@ class Publisher:
             end
 
             -- Store the job.
-            rcall(
-                "HMSET",
-                jobIdKey,
-                "name",
-                ARGV[3],
-                "data",
-                ARGV[4],
-                "opts",
-                ARGV[5],
-                "timestamp",
-                ARGV[6],
-                "delay",
-                ARGV[7],
-                "priority",
-                ARGV[9]
-            )
+            rcall("HMSET", jobIdKey, "name", ARGV[3], "data", ARGV[4], "opts", ARGV[5],
+                "timestamp", ARGV[6], "delay", ARGV[7], "priority", ARGV[9])
 
             -- Check if job is delayed
-            local delayedTimestamp = tonumber(ARGV[8])
-            if(delayedTimestamp ~= 0) then
-                local timestamp = delayedTimestamp * 0x1000 + bit.band(jobCounter, 0xfff)
-                rcall("ZADD", KEYS[5], timestamp, jobId)
-                rcall("PUBLISH", KEYS[5], delayedTimestamp)
+            local scheduledTime = tonumber(ARGV[12])
+            if scheduledTime > 0 then
+                -- Schedule the job for future execution
+                rcall("ZADD", KEYS[5], scheduledTime, jobId)
+                rcall("PUBLISH", KEYS[5], scheduledTime)
             else
                 local target
 
@@ -145,14 +133,15 @@ class Publisher:
                     local count = rcall("ZCOUNT", KEYS[6], 0, priority)
 
                     local len = rcall("LLEN", target)
-                    local id = rcall("LINDEX", target, len - (count-1))
+                    local id = rcall("LINDEX", target, len - (count - 1))
                     if id then
-                    rcall("LINSERT", target, "BEFORE", id, jobId)
+                        rcall("LINSERT", target, "BEFORE", id, jobId)
                     else
-                    rcall("RPUSH", target, jobId)
+                        rcall("RPUSH", target, jobId)
                     end
 
                 end
             end
 
-            return jobId .. "" -- convert to string"""
+            return jobId .. "" -- convert to string
+    """
